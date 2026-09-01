@@ -1,63 +1,52 @@
-
-
 ```markdown
 # telegram-personalized-sender
 
-**Stop sending the same message to everyone.** This tool reads a CSV of leads, writes a unique opening line for each one with Claude based on their actual business, then sends it over Telegram — with delays and flood-wait handling so the account doesn't get flagged.
+Telegram outreach tool (Telethon + Claude) that writes a unique, personalized opening message for each lead from a CSV — instead of blasting the same text to everyone — with flood-wait handling and a dry-run preview.
 
-![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)
-![Telethon](https://img.shields.io/badge/telegram-telethon-26A5E4?logo=telegram&logoColor=white)
-![Claude](https://img.shields.io/badge/AI-Claude-D97757)
-![License](https://img.shields.io/badge/license-MIT-lightgrey)
+## Features
 
----
+- CSV-driven — one row per lead: name, handle, business type, city, notes
+- Claude-generated opening line per lead, grounded in their actual context (falls back to a built-in template if no API key is set)
+- Real Telegram user session via Telethon — reaches any username, not just people who already messaged a bot
+- `FloodWaitError` handling — waits it out automatically instead of crashing
+- Randomized delay between sends (default 20–40s)
+- `--dry-run` mode — preview every generated message before anything sends
+- Every run logged to `sent_log.csv` (sent / failed / dry-run, per recipient)
 
-### Why
+## ⚠️ Important
 
-A plain auto-sender blasts one identical message to a list — reads like spam, gets ignored (or gets the account banned). This one writes a different opener for every recipient, grounded in who they actually are:
+Mass messaging can violate [Telegram's Terms of Service](https://telegram.org/tos) and get your account limited or banned. This tool sends messages from **your personal account** via the Telegram API (not through a bot). Use it for real leads and existing contacts, not cold spam to random accounts, and keep delays reasonable (20+ sec between messages is recommended).
 
-```
-> auto-sender:        "Hi! Check out our services, DM for info 🚀"
-> this tool (Anna, bakery, Riga, "recently opened a second location"):
-  "Noticed Anna (bakery in Riga) — recently opened a second location.
-   We build small tools (booking, reminders, simple automation)
-   for businesses like yours. Worth a quick look?"
-```
+## Requirements
 
-### Features
+- Python 3.10+
+- API ID and API Hash from [my.telegram.org](https://my.telegram.org)
+- (optional) Anthropic API key — without it, messages fall back to a built-in template
 
-- **CSV in, personalized message out** — one row per recipient: name, handle, business type, city, notes
-- **Claude-generated opener per lead**, grounded in their actual context — not a copy-pasted mass message
-- **Runs with zero secrets** — no API key set, falls back to a built-in template so the pipeline still works end to end
-- **Real Telegram user session (Telethon)**, not a bot — reaches any username, not just people who already messaged a bot
-- **Flood-wait aware** — randomized delay between sends, automatic retry on `FloodWaitError` instead of crashing the run
-- **`--dry-run` mode** — generate and preview every message before anything gets sent
-- **Every run logged** to `sent_log.csv` (sent / failed / dry-run, per recipient)
-
-> [!WARNING]
-> This sends from **your personal Telegram account** via the Telegram API, not through a bot. Mass or unsolicited messaging can violate [Telegram's Terms of Service](https://telegram.org/tos) and get an account limited or banned. Use it for real leads and existing contacts — not cold spam to random accounts — and keep delays reasonable (default: 20–40s between sends).
-
-### Requirements
-
-| | |
-|---|---|
-| Python | 3.10+ |
-| Telegram | `api_id` / `api_hash` from [my.telegram.org](https://my.telegram.org) |
-| Anthropic API key | optional — without it, messages use the built-in template |
-
-### Quick start
+## Setup
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env            # fill in TELEGRAM_API_ID, TELEGRAM_API_HASH, ANTHROPIC_API_KEY
+```
 
+Copy `.env.example` to `.env` and fill in your own values:
+
+```
+TELEGRAM_API_ID=1234567
+TELEGRAM_API_HASH=your_api_hash_here
+ANTHROPIC_API_KEY=
+```
+
+## Run
+
+```bash
 python main.py leads_example.csv --dry-run   # preview — sends nothing
 python main.py leads_example.csv             # sends for real
 ```
 
-On first run, Telethon asks for your phone number, then a login code (and a 2FA password if you have one set) — enter them in the terminal. A session file is saved afterward so you won't need to log in again.
+On first run, Telethon will ask for your phone number, then a verification code (and a 2FA password if enabled) — enter them in the terminal. After a successful login, a session file is created — **do not publish it**, it grants full access to the account, same as a password.
 
-### Project structure
+## Project structure
 
 | File | Purpose |
 |---|---|
@@ -65,12 +54,5 @@ On first run, Telethon asks for your phone number, then a login code (and a 2FA 
 | `personalize.py` | Generates each message via Claude, with a template fallback |
 | `sender.py` | Telethon client, send-with-retry, flood-wait handling, delay between sends |
 | `leads_example.csv` | Sample lead list (synthetic data, safe to run against) |
-
-> [!IMPORTANT]
-> `.env`, `*.session`, and `sent_log.csv` are already in `.gitignore` — the session file grants full access to your Telegram account, same as a password. Never commit it.
-
----
-
-Built with `Python` · `Telethon` · `Claude`
 ```
 
