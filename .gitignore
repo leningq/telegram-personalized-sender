@@ -1,0 +1,5 @@
+.env
+__pycache__/
+*.pyc
+outreach_session.session
+sent_log.csv
